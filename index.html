@@ -1,0 +1,2625 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Nodex - Yeni Nesil Arama Motoru</title>
+    <style>
+        :root {
+            --bg-color: #0b0d14;
+            --surface-color: #151823;
+            --surface-hover: #1e2232;
+            --border-color: #282d42;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --accent-blue: #38bdf8;
+            --accent-purple: #a855f7;
+            --accent-green: #10b981;
+            --gradient-main: linear-gradient(135deg, #00f2fe 0%, #4facfe 40%, #a855f7 100%);
+        }
+
+        /* GÖRÜNÜM TEMALARI */
+        body.theme-light {
+            --bg-color: #f1f5f9;
+            --surface-color: #ffffff;
+            --surface-hover: #e2e8f0;
+            --border-color: #cbd5e1;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+        }
+
+        body.theme-neon {
+            --bg-color: #070412;
+            --surface-color: #120b29;
+            --surface-hover: #1c123d;
+            --border-color: #3b2478;
+            --text-main: #f8fafc;
+            --text-muted: #c4b5fd;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            min-height: 100dvh;
+            overflow-x: hidden;
+            transition: background-color 0.25s, color 0.25s;
+        }
+
+        /* --- SAĞ ÜST MENÜ BUTONU (3 ÇİZGİ) --- */
+        .top-right-menu-btn {
+            position: fixed;
+            top: 20px;
+            right: 25px;
+            z-index: 1000;
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            transition: 0.25s;
+        }
+
+        .top-right-menu-btn:hover {
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.35);
+        }
+
+        .top-right-menu-btn span {
+            width: 22px;
+            height: 2.5px;
+            background: var(--gradient-main);
+            border-radius: 2px;
+        }
+
+        /* --- ANA EKRAN (GİRİŞ SAYFASI) --- */
+        #home-view {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding: 20px 20px 95px 20px;
+            background: radial-gradient(circle at 50% 35%, rgba(79, 172, 254, 0.12), rgba(168, 85, 247, 0.08), transparent 65%);
+            position: relative;
+        }
+
+        .nodex-logo-big {
+            font-size: clamp(4.2rem, 9vw, 6.2rem);
+            font-weight: 900;
+            letter-spacing: -3px;
+            background: var(--gradient-main);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 8px 25px rgba(79, 172, 254, 0.3));
+            margin-bottom: 24px;
+            user-select: none;
+            text-align: center;
+        }
+
+        .search-box-wrapper {
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 74px 15px 22px;
+            border-radius: 50px;
+            border: 1.5px solid var(--border-color);
+            background: var(--surface-color);
+            color: var(--text-main);
+            font-size: 1rem;
+            outline: none;
+            transition: 0.3s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .search-input:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.3);
+        }
+
+        .search-submit-btn {
+            position: absolute;
+            right: 7px;
+            background: var(--gradient-main);
+            border: none;
+            color: #0b0d14;
+            font-weight: 700;
+            padding: 10px 18px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.92rem;
+        }
+
+        .search-submit-btn:hover {
+            transform: scale(1.04);
+        }
+
+        /* ARAMA TAHMİNLERİ VE ARAMA GEÇMİŞİ AÇILIR KUTUSU */
+        .suggestions-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            right: 0;
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+            z-index: 950;
+            overflow: hidden;
+            text-align: left;
+        }
+
+        .suggestion-item {
+            padding: 11px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            cursor: pointer;
+            font-size: 0.92rem;
+            color: var(--text-main);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+            transition: 0.15s;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item:hover {
+            background: var(--surface-hover);
+        }
+
+        .suggestion-badge {
+            font-size: 0.72rem;
+            color: var(--accent-blue);
+            background: rgba(56, 189, 248, 0.12);
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+
+        .quick-tags {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            max-width: 680px;
+        }
+
+        .quick-tag {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 7px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .quick-tag:hover {
+            color: var(--text-main);
+            border-color: var(--accent-purple);
+        }
+
+        /* --- SOL ALT: NODEX HAKKINDA BÜYÜK TUŞ --- */
+        .about-nodex-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 24px;
+            background: var(--gradient-main);
+            color: #07090e;
+            font-weight: 800;
+            font-size: 0.98rem;
+            padding: 13px 24px;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(168, 85, 247, 0.4);
+            transition: transform 0.25s, box-shadow 0.25s;
+            z-index: 900;
+        }
+
+        .about-nodex-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(56, 189, 248, 0.55);
+        }
+
+        /* --- ANA SAYFA ALT KISIM: SİTE EKLE, POLİTİKA VE ŞARTLAR, KONUM --- */
+        .home-bottom-bar {
+            position: fixed;
+            bottom: 22px;
+            right: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            z-index: 890;
+        }
+
+        .footer-pill-btn {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 10px 15px;
+            border-radius: 12px;
+            font-size: 0.86rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: 0.2s;
+        }
+
+        .footer-pill-btn:hover {
+            color: var(--text-main);
+            border-color: var(--accent-blue);
+            background: var(--surface-hover);
+        }
+
+        .location-badge {
+            border-color: rgba(56, 189, 248, 0.35);
+            color: var(--text-main);
+        }
+
+        /* --- ARAMA SONUÇ EKRANI --- */
+        #results-view {
+            display: none;
+            min-height: 100vh;
+            min-height: 100dvh;
+        }
+
+        .results-header {
+            position: sticky;
+            top: 0;
+            background: var(--bg-color);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 14px 26px 0 26px;
+            z-index: 800;
+        }
+
+        .header-top-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding-right: 65px;
+            flex-wrap: wrap;
+        }
+
+        .back-home-btn {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            width: 38px;
+            height: 38px;
+            border-radius: 11px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+            flex-shrink: 0;
+        }
+
+        .back-home-btn:hover {
+            border-color: var(--accent-blue);
+            background: var(--surface-hover);
+            color: var(--accent-blue);
+            transform: translateX(-2px);
+        }
+
+        .nodex-logo-small {
+            font-size: 1.9rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            background: var(--gradient-main);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .header-search-wrapper {
+            flex: 1;
+            max-width: 580px;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .header-search-input {
+            width: 100%;
+            padding: 11px 65px 11px 18px;
+            border-radius: 30px;
+            border: 1px solid var(--border-color);
+            background: var(--surface-color);
+            color: var(--text-main);
+            font-size: 0.94rem;
+            outline: none;
+        }
+
+        .header-search-input:focus {
+            border-color: var(--accent-blue);
+        }
+
+        /* SEKMELER: TÜMÜ, GÖRSELLER, VİDEOLAR, HABERLER, YERLER, ARAÇLAR */
+        .tabs-bar {
+            display: flex;
+            gap: 22px;
+            margin-top: 14px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .tabs-bar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.93rem;
+            font-weight: 600;
+            padding: 10px 5px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-main);
+        }
+
+        .tab-btn.active {
+            color: var(--accent-blue);
+            border-bottom-color: var(--accent-purple);
+        }
+
+        .results-container {
+            width: 100%;
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 24px 28px 80px 28px;
+            min-height: 65vh;
+        }
+
+        /* --- ORTADA YÜKLENME KISMI (YEŞİL, MAVİ, SİYAH, MOR NOKTALAR) --- */
+        #nodex-loader {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 55vh;
+            gap: 18px;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loader-dots-track {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 18px 30px;
+            background: #07080c;
+            border: 1px solid #222638;
+            border-radius: 50px;
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7);
+        }
+
+        .dot-step {
+            width: 17px;
+            height: 17px;
+            border-radius: 50%;
+            opacity: 0.25;
+            transform: scale(0.8);
+            animation: dotWave 1.2s infinite ease-in-out;
+        }
+
+        .dot-green {
+            background-color: #10b981;
+            box-shadow: 0 0 14px #10b981;
+            animation-delay: 0s;
+        }
+
+        .dot-blue {
+            background-color: #38bdf8;
+            box-shadow: 0 0 14px #38bdf8;
+            animation-delay: 0.2s;
+        }
+
+        .dot-black {
+            background-color: #050507;
+            border: 2px solid #64748b;
+            box-shadow: 0 0 12px rgba(148, 163, 184, 0.5);
+            animation-delay: 0.4s;
+        }
+
+        .dot-purple {
+            background-color: #a855f7;
+            box-shadow: 0 0 14px #a855f7;
+            animation-delay: 0.6s;
+        }
+
+        @keyframes dotWave {
+            0%, 100% {
+                opacity: 0.25;
+                transform: scale(0.8);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.35);
+            }
+        }
+
+        .loader-label {
+            font-size: 0.95rem;
+            font-weight: 600;
+            background: linear-gradient(90deg, #10b981, #38bdf8, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 0.5px;
+        }
+
+        .stats-text {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 18px;
+        }
+
+        .spellcheck-banner {
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            padding: 10px 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            color: var(--text-main);
+        }
+
+        .spellcheck-banner button {
+            background: none;
+            border: none;
+            color: var(--accent-blue);
+            font-weight: 700;
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: 0.92rem;
+        }
+
+        /* TÜMÜ (SİTELER) KARTLARI */
+        .web-result-card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 18px 22px;
+            margin-bottom: 14px;
+            max-width: 780px;
+            transition: 0.2s;
+        }
+
+        .web-result-card:hover {
+            border-color: var(--accent-blue);
+            transform: translateX(4px);
+        }
+
+        .result-source {
+            font-size: 0.8rem;
+            color: var(--accent-blue);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .badge-wiki {
+            background: rgba(56, 189, 248, 0.16);
+            color: #38bdf8;
+            padding: 3px 9px;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+
+        .badge-microwiki {
+            background: rgba(16, 185, 129, 0.18);
+            color: #10b981;
+            padding: 3px 9px;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+
+        .badge-yt {
+            background: rgba(239, 68, 68, 0.18);
+            color: #f87171;
+            padding: 3px 9px;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+
+        .badge-news {
+            background: rgba(168, 85, 247, 0.18);
+            color: #c084fc;
+            padding: 3px 9px;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+
+        .result-title {
+            font-size: 1.15rem;
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 6px;
+            line-height: 1.35;
+        }
+
+        .result-title:hover {
+            color: var(--accent-purple);
+            text-decoration: underline;
+        }
+
+        .result-snippet {
+            color: var(--text-muted);
+            font-size: 0.91rem;
+            line-height: 1.55;
+        }
+
+        /* --- GÖRSELLER: SOLDA IZGARA, SAĞDA BÜYÜK ÖNİZLEME PANELİ --- */
+        .images-layout {
+            display: flex;
+            gap: 22px;
+            align-items: flex-start;
+        }
+
+        .images-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+            gap: 16px;
+        }
+
+        .image-card {
+            background: var(--surface-color);
+            border: 1.5px solid var(--border-color);
+            border-radius: 14px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: 0.25s;
+        }
+
+        .image-card:hover, .image-card.selected {
+            transform: translateY(-4px);
+            border-color: var(--accent-blue);
+            box-shadow: 0 8px 24px rgba(56, 189, 248, 0.22);
+        }
+
+        .image-card img {
+            width: 100%;
+            height: 165px;
+            object-fit: cover;
+            display: block;
+            background: #0d1019;
+        }
+
+        .image-card-info {
+            padding: 11px 12px;
+        }
+
+        .image-card-title {
+            font-size: 0.88rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .image-card-cat {
+            font-size: 0.76rem;
+            color: var(--accent-blue);
+        }
+
+        .image-preview-pane {
+            display: none;
+            width: 430px;
+            max-width: 100%;
+            position: sticky;
+            top: 125px;
+            background: var(--surface-color);
+            border: 1.5px solid var(--accent-purple);
+            border-radius: 18px;
+            padding: 20px;
+            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.65);
+            flex-shrink: 0;
+        }
+
+        .preview-pane-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .preview-close-btn {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .preview-close-btn:hover {
+            background: #ef4444;
+            border-color: #ef4444;
+            color: #fff;
+        }
+
+        .preview-large-img {
+            width: 100%;
+            max-height: 360px;
+            object-fit: contain;
+            background: #07090e;
+            border-radius: 12px;
+            margin-bottom: 14px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* --- HABERLER & VİDEOLAR (YOUTUBE KARTLARI) --- */
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(305px, 1fr));
+            gap: 20px;
+        }
+
+        .news-card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: 0.25s;
+        }
+
+        .news-card:hover {
+            border-color: #ef4444;
+            transform: translateY(-4px);
+            box-shadow: 0 10px 28px rgba(239, 68, 68, 0.18);
+        }
+
+        .news-thumb-wrapper {
+            position: relative;
+            width: 100%;
+            height: 175px;
+            background: #090b10;
+            overflow: hidden;
+            display: block;
+        }
+
+        .news-thumb {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.85;
+            transition: 0.3s;
+        }
+
+        .news-card:hover .news-thumb {
+            transform: scale(1.04);
+            opacity: 1;
+        }
+
+        .yt-play-badge {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.28);
+        }
+
+        .yt-play-circle {
+            width: 52px;
+            height: 36px;
+            background: #ef4444;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 16px rgba(239, 68, 68, 0.6);
+        }
+
+        .yt-live-tag {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #dc2626;
+            color: #fff;
+            font-size: 0.72rem;
+            font-weight: 800;
+            padding: 3px 9px;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .news-body {
+            padding: 16px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* YERLER & ARAÇLAR */
+        .places-grid, .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            gap: 18px;
+        }
+
+        .place-card, .tool-box {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .tool-box h3 {
+            margin-bottom: 12px;
+            color: var(--accent-blue);
+        }
+
+        .tool-input {
+            width: 100%;
+            padding: 11px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            color: var(--text-main);
+            margin-bottom: 10px;
+            font-size: 0.96rem;
+        }
+
+        /* --- SAĞ ÜST ÇEKMECE (PROFİL, AYARLAR, HESAP OLUŞTUR, GİRİŞ YAP) --- */
+        .drawer-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.72);
+            z-index: 1500;
+            justify-content: flex-end;
+        }
+
+        .drawer-panel {
+            width: 100%;
+            max-width: 420px;
+            background: var(--surface-color);
+            height: 100%;
+            border-left: 1px solid var(--border-color);
+            padding: 24px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            overflow-y: auto;
+        }
+
+        .profile-center-box {
+            text-align: center;
+            padding: 18px;
+            background: var(--bg-color);
+            border-radius: 18px;
+            border: 1px solid var(--border-color);
+        }
+
+        .avatar-circle {
+            width: 78px;
+            height: 78px;
+            border-radius: 50%;
+            background: var(--gradient-main);
+            margin: 0 auto 10px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.9rem;
+            font-weight: 800;
+            color: #0b0d14;
+            overflow: hidden;
+        }
+
+        .avatar-circle img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* AYARLAR BÖLÜMÜ VE KAPAT/AÇ (TOGGLE) DÜĞMELERİ */
+        .settings-section-box {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 16px;
+        }
+
+        .settings-section-title {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--accent-blue);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+        }
+
+        .setting-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .setting-info {
+            flex: 1;
+        }
+
+        .setting-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .setting-desc {
+            font-size: 0.76rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* KAPAT / AÇ ANAHTAR DÜĞMESİ */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 26px;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: #334155;
+            transition: 0.3s;
+            border-radius: 30px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #ffffff;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: var(--gradient-main);
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(22px);
+            background-color: #0b0d14;
+        }
+
+        .setting-select {
+            background: var(--surface-color);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 0.84rem;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .history-list-box {
+            margin-top: 10px;
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px;
+            max-height: 140px;
+            overflow-y: auto;
+        }
+
+        .history-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 4px 10px;
+            border-radius: 14px;
+            font-size: 0.78rem;
+            margin: 3px;
+            cursor: pointer;
+        }
+
+        .history-chip:hover {
+            border-color: var(--accent-blue);
+        }
+
+        .auth-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .auth-tab-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            color: var(--text-main);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .auth-tab-btn.active {
+            background: var(--gradient-main);
+            color: #0b0d14;
+            border: none;
+        }
+
+        .auth-input {
+            width: 100%;
+            padding: 11px 14px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            color: var(--text-main);
+            font-size: 0.94rem;
+        }
+
+        .primary-action-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            background: var(--gradient-main);
+            color: #0b0d14;
+            font-weight: 800;
+            cursor: pointer;
+            margin-top: 4px;
+            font-size: 0.95rem;
+        }
+
+        /* --- MODALLAR --- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.82);
+            backdrop-filter: blur(6px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-card {
+            background: var(--surface-color);
+            border: 1px solid var(--accent-purple);
+            border-radius: 22px;
+            max-width: 660px;
+            width: 100%;
+            max-height: 88vh;
+            overflow-y: auto;
+            padding: 28px;
+            box-shadow: 0 20px 60px rgba(168, 85, 247, 0.35);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            gap: 10px;
+        }
+
+        .modal-header h2 {
+            background: var(--gradient-main);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 1.55rem;
+        }
+
+        .close-btn {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .founder-banner {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.14), rgba(168, 85, 247, 0.14));
+            border: 1px solid rgba(168, 85, 247, 0.4);
+            padding: 15px;
+            border-radius: 14px;
+            margin-bottom: 18px;
+            line-height: 1.6;
+        }
+
+        .project-item, .long-article-box {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+
+        .project-item h4, .long-article-box h4 {
+            color: var(--accent-blue);
+            margin-bottom: 8px;
+            font-size: 1.04rem;
+        }
+
+        .project-item p, .long-article-box p {
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            line-height: 1.62;
+            margin-bottom: 10px;
+        }
+
+        .project-link {
+            display: inline-block;
+            color: #0b0d14;
+            background: var(--gradient-main);
+            padding: 7px 15px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.86rem;
+        }
+
+        /* =====================================================================
+           CİHAZ VE EKRAN BOYUTU UYUMLULUĞU
+           ===================================================================== */
+
+        /* 1. BİLGİSAYAR VE GENİŞ EKRANLAR (1200px ve üzeri) */
+        @media (min-width: 1200px) {
+            .nodex-logo-big {
+                font-size: 6.2rem;
+                margin-bottom: 24px;
+            }
+            .search-box-wrapper {
+                max-width: 610px;
+            }
+            .search-input {
+                padding: 15px 76px 15px 22px;
+                font-size: 1.02rem;
+            }
+            .search-submit-btn {
+                padding: 10px 20px;
+                font-size: 0.94rem;
+            }
+            .quick-tag {
+                padding: 8px 15px;
+                font-size: 0.86rem;
+            }
+            .header-search-wrapper {
+                max-width: 580px;
+            }
+            .header-search-input {
+                padding: 11px 68px 11px 18px;
+                font-size: 0.95rem;
+            }
+            .web-result-card {
+                max-width: 780px;
+                padding: 18px 22px;
+            }
+            .result-title {
+                font-size: 1.15rem;
+            }
+            .result-snippet {
+                font-size: 0.92rem;
+            }
+            .images-grid {
+                grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+                gap: 16px;
+            }
+            .image-card img {
+                height: 170px;
+            }
+            .image-preview-pane {
+                width: 440px;
+            }
+            .news-grid {
+                grid-template-columns: repeat(auto-fill, minmax(315px, 1fr));
+                gap: 20px;
+            }
+            .news-thumb-wrapper {
+                height: 180px;
+            }
+            .modal-card {
+                max-width: 660px;
+                padding: 28px;
+            }
+        }
+
+        /* ULTRA GENİŞ MASAÜSTÜ EKRANLAR (1650px ve üzeri) */
+        @media (min-width: 1650px) {
+            .results-container {
+                max-width: 1380px;
+                padding: 28px 34px 85px 34px;
+            }
+            .nodex-logo-big {
+                font-size: 6.6rem;
+            }
+            .search-box-wrapper {
+                max-width: 650px;
+            }
+        }
+
+        /* 2. TABLETLER (601px - 1024px arası) */
+        @media (min-width: 601px) and (max-width: 1024px) {
+            #home-view {
+                padding: 30px 28px 120px 28px;
+            }
+            .nodex-logo-big {
+                font-size: 6.2rem;
+            }
+            .search-box-wrapper {
+                max-width: 92%;
+            }
+            .search-input {
+                padding: 18px 82px 18px 24px;
+                font-size: 1.12rem;
+            }
+            .results-header {
+                padding: 16px 22px 0 22px;
+            }
+            .header-top-row {
+                padding-right: 60px;
+            }
+            .results-container {
+                padding: 24px 22px 80px 22px;
+            }
+            .images-layout {
+                flex-direction: column-reverse;
+            }
+            .image-preview-pane {
+                width: 100%;
+                position: static;
+            }
+            .images-grid {
+                grid-template-columns: repeat(2, 1fr);
+                width: 100%;
+            }
+            .news-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .about-nodex-btn {
+                bottom: 18px;
+                left: 18px;
+                padding: 14px 22px;
+                font-size: 1rem;
+            }
+            .home-bottom-bar {
+                bottom: 18px;
+                right: 18px;
+                gap: 8px;
+            }
+        }
+
+        /* 3. AKILLI TELEFONLAR (600px ve altı - HİÇ DOKUNULMADI) */
+        @media (max-width: 600px) {
+            .top-right-menu-btn {
+                top: 14px;
+                right: 14px;
+                width: 44px;
+                height: 44px;
+            }
+
+            #home-view {
+                justify-content: flex-start;
+                padding: 95px 16px 36px 16px;
+            }
+
+            .nodex-logo-big {
+                font-size: 4.4rem;
+                margin-bottom: 24px;
+            }
+
+            .search-box-wrapper {
+                width: 100%;
+            }
+
+            .search-input {
+                padding: 16px 76px 16px 18px;
+                font-size: 1.02rem;
+            }
+
+            .search-submit-btn {
+                padding: 11px 16px;
+                font-size: 0.92rem;
+            }
+
+            .quick-tags {
+                margin-top: 20px;
+                gap: 8px;
+                width: 100%;
+            }
+
+            .quick-tag {
+                padding: 9px 14px;
+                font-size: 0.88rem;
+                flex: 1 1 auto;
+                text-align: center;
+            }
+
+            .about-nodex-btn {
+                position: static;
+                width: 100%;
+                margin-top: 32px;
+                padding: 16px 20px;
+                font-size: 1.08rem;
+                text-align: center;
+            }
+
+            .home-bottom-bar {
+                position: static;
+                width: 100%;
+                margin-top: 14px;
+                justify-content: center;
+                gap: 8px;
+            }
+
+            .footer-pill-btn {
+                flex: 1 1 calc(50% - 8px);
+                justify-content: center;
+                padding: 12px 10px;
+                font-size: 0.86rem;
+            }
+
+            .results-header {
+                padding: 12px 14px 0 14px;
+            }
+
+            .header-top-row {
+                gap: 10px;
+                padding-right: 54px;
+            }
+
+            .back-home-btn {
+                width: 40px;
+                height: 40px;
+            }
+
+            .nodex-logo-small {
+                font-size: 1.75rem;
+            }
+
+            .header-search-wrapper {
+                flex: 1 1 100%;
+                max-width: 100%;
+                order: 3;
+                margin-top: 4px;
+            }
+
+            .header-search-input {
+                padding: 12px 66px 12px 16px;
+                font-size: 1rem;
+            }
+
+            .tabs-bar {
+                gap: 16px;
+                margin-top: 12px;
+            }
+
+            .tab-btn {
+                font-size: 0.96rem;
+                padding: 10px 4px;
+            }
+
+            .results-container {
+                padding: 18px 14px 70px 14px;
+            }
+
+            .web-result-card {
+                padding: 16px;
+            }
+
+            .result-title {
+                font-size: 1.12rem;
+            }
+
+            .images-layout {
+                flex-direction: column-reverse;
+                gap: 16px;
+            }
+
+            .image-preview-pane {
+                width: 100%;
+                position: static;
+                padding: 16px;
+            }
+
+            .preview-large-img {
+                max-height: 280px;
+            }
+
+            .images-grid {
+                width: 100%;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            .image-card img {
+                height: 145px;
+            }
+
+            .news-grid, .places-grid, .tools-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .drawer-panel {
+                max-width: 100%;
+                padding: 22px 18px;
+            }
+
+            .modal-overlay {
+                padding: 12px;
+            }
+
+            .modal-card {
+                padding: 20px 16px;
+                max-height: 90vh;
+                border-radius: 18px;
+            }
+
+            .modal-header h2 {
+                font-size: 1.35rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SAĞ ÜST 3 ÇİZGİ MENÜ BUTONU -->
+    <button class="top-right-menu-btn" onclick="openDrawer()" title="Hesap, Profil ve Ayarlar">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- 1. ANA SAYFA EKRANI -->
+    <div id="home-view">
+        <div class="nodex-logo-big">Nodex</div>
+        
+        <form class="search-box-wrapper" onsubmit="handleSearch(event, 'home')">
+            <input type="text" id="home-search-input" class="search-input" autocomplete="off"
+                placeholder="Nodex'te ara... (Wikipedia, Micro Wiki, Furdistan, YouTube Haberler)" 
+                oninput="updateSuggestions('home')" onfocus="updateSuggestions('home')" required>
+            <button type="submit" id="home-search-btn" class="search-submit-btn">Ara</button>
+            <div id="home-suggestions" class="suggestions-dropdown"></div>
+        </form>
+
+        <div class="quick-tags">
+            <span class="quick-tag" onclick="quickSearch('Furdistan')">🏴 Furdistan</span>
+            <span class="quick-tag" onclick="quickSearch('Mikro uluslar')">🏛️ Micro Wiki</span>
+            <span class="quick-tag" onclick="quickSearch('Ortadoğu')">🌍 Ortadoğu</span>
+            <span class="quick-tag" onclick="quickSearch('Polis Merkezi')">🚓 Polis Merkezi</span>
+            <span class="quick-tag" onclick="quickSearch('Yapay Zeka Teknolojisi')">🤖 Yapay Zeka</span>
+        </div>
+
+        <!-- SOL ALT BÜYÜK NODEX HAKKINDA TUŞU -->
+        <button class="about-nodex-btn" id="btn-about-nodex" onclick="openModal('about-modal')">
+            Nodex Hakkında
+        </button>
+
+        <!-- ANA KISIM EN ALT: SİTE EKLE, POLİTİKA VE ŞARTLAR, KONUM (ÜLKE) -->
+        <div class="home-bottom-bar">
+            <button class="footer-pill-btn" id="btn-add-site" onclick="openModal('add-site-modal')">
+                ➕ Site Ekle
+            </button>
+            <button class="footer-pill-btn" id="btn-policy" onclick="openModal('policy-modal')">
+                📜 Politika ve Şartlar
+            </button>
+            <button class="footer-pill-btn location-badge" onclick="openModal('turkey-modal')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                <span id="footer-country-label">Türkiye</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 2. ARAMA SONUÇ EKRANI -->
+    <div id="results-view">
+        <header class="results-header">
+            <div class="header-top-row">
+                <!-- SOL ÜST GERİ OK TUŞU -->
+                <button class="back-home-btn" onclick="goHome()" title="Ana Arama Ekranına Dön">←</button>
+                <div class="nodex-logo-small" onclick="goHome()">Nodex</div>
+                <form class="header-search-wrapper" onsubmit="handleSearch(event, 'header')">
+                    <input type="text" id="header-search-input" class="header-search-input" autocomplete="off"
+                        placeholder="Nodex'te ara..." oninput="updateSuggestions('header')" onfocus="updateSuggestions('header')">
+                    <button type="submit" id="header-search-btn" class="search-submit-btn" style="padding: 8px 16px; font-size: 0.88rem;">Ara</button>
+                    <div id="header-suggestions" class="suggestions-dropdown"></div>
+                </form>
+            </div>
+
+            <!-- SEKMELER: TÜMÜ, GÖRSELLER, VİDEOLAR, HABERLER, YERLER, ARAÇLAR -->
+            <nav class="tabs-bar">
+                <button class="tab-btn active" data-tab="tumu" id="tab-lbl-tumu" onclick="switchTab('tumu')">Tümü</button>
+                <button class="tab-btn" data-tab="gorseller" id="tab-lbl-gorseller" onclick="switchTab('gorseller')">Görseller</button>
+                <button class="tab-btn" data-tab="videolar" id="tab-lbl-videolar" onclick="switchTab('videolar')">Videolar</button>
+                <button class="tab-btn" data-tab="haberler" id="tab-lbl-haberler" onclick="switchTab('haberler')">Haberler</button>
+                <button class="tab-btn" data-tab="yerler" id="tab-lbl-yerler" onclick="switchTab('yerler')">Yerler</button>
+                <button class="tab-btn" data-tab="araclar" id="tab-lbl-araclar" onclick="switchTab('araclar')">Araçlar</button>
+            </nav>
+        </header>
+
+        <main class="results-container">
+            <!-- ORTADA YÜKLENME KISMI (YEŞİL, MAVİ, SİYAH, MOR NOKTALAR) -->
+            <div id="nodex-loader">
+                <div class="loader-dots-track">
+                    <div class="dot-step dot-green"></div>
+                    <div class="dot-step dot-blue"></div>
+                    <div class="dot-step dot-black"></div>
+                    <div class="dot-step dot-purple"></div>
+                </div>
+                <div class="loader-label">Nodex kaynakları, YouTube videoları ve görseller taranıyor...</div>
+            </div>
+
+            <!-- SONUÇ ALANI -->
+            <div id="results-output-wrapper">
+                <div id="spellcheck-container"></div>
+                <div id="results-stats" class="stats-text"></div>
+                <div id="results-content"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- SAĞ ÜST ÇEKMECE: PROFİL + AYARLAR (KAPAT/AÇ DÜĞMELİ) + HESAP OLUŞTUR / GİRİŞ YAP -->
+    <div id="drawer-overlay" class="drawer-overlay" onclick="closeOnOutside(event, 'drawer-overlay')">
+        <div class="drawer-panel">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="background: var(--gradient-main); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Nodex Menü & Ayarlar</h3>
+                <button class="close-btn" onclick="closeModal('drawer-overlay')">✕</button>
+            </div>
+
+            <!-- ORTADA PROFİL KOY KISMI -->
+            <div class="profile-center-box">
+                <div class="avatar-circle" id="avatar-preview">N</div>
+                <h4 id="profile-display-name" style="margin-bottom:4px;">Misafir Kullanıcı</h4>
+                <p id="profile-display-email" style="font-size:0.82rem; color:var(--text-muted); margin-bottom:12px;">Henüz giriş yapılmadı</p>
+                
+                <label for="avatar-upload" style="display:inline-block; padding:8px 15px; background:var(--surface-hover); border:1px solid var(--accent-blue); border-radius:8px; font-size:0.84rem; cursor:pointer;">
+                    📷 Profil Fotoğrafı Koy
+                </label>
+                <input type="file" id="avatar-upload" accept="image/*" style="display:none;" onchange="handleAvatarUpload(event)">
+            </div>
+
+            <!-- AYARLAR BÖLÜMÜ (KAPAT/AÇ DÜĞMELERİYLE) -->
+            <div class="settings-section-box">
+                <div class="settings-section-title">⚙️ Nodex Arama Ayarları</div>
+
+                <!-- 1. Sonuçları yeni sekmede aç -->
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <div class="setting-name">Sonuçları yeni sekmede aç</div>
+                        <div class="setting-desc">Tıklanan siteler yeni tarayıcı sekmesinde açılır</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="opt-new-tab" checked onchange="saveSettings()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <!-- 2. Arama tahminleri -->
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <div class="setting-name">Arama tahminleri</div>
+                        <div class="setting-desc">Yazarken otomatik arama önerileri göster</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="opt-suggestions" checked onchange="saveSettings()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <!-- 3. Arama geçmişi -->
+                <div class="setting-row" style="flex-direction:column; align-items:stretch;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div class="setting-info">
+                            <div class="setting-name">Arama geçmişi</div>
+                            <div class="setting-desc">Yaptığınız aramaları kaydeder ve hızlı erişim sağlar</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="opt-history" checked onchange="saveSettings(); renderHistoryInDrawer();">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div id="drawer-history-container" class="history-list-box"></div>
+                </div>
+
+                <!-- 4. Yazım hatalarını düzelt -->
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <div class="setting-name">Yazım hatalarını düzelt</div>
+                        <div class="setting-desc">Yanlış yazılan kelimeleri otomatik düzeltir</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="opt-spellcheck" checked onchange="saveSettings()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <!-- 5. Arayüz dili -->
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <div class="setting-name">Arayüz dili</div>
+                        <div class="setting-desc">Nodex menü ve sekme dili</div>
+                    </div>
+                    <select id="opt-language" class="setting-select" onchange="applyLanguage(this.value)">
+                        <option value="tr">Türkçe</option>
+                        <option value="en">English</option>
+                        <option value="de">Deutsch</option>
+                        <option value="es">Español</option>
+                        <option value="fr">Français</option>
+                        <option value="ar">العربية</option>
+                        <option value="fd">Furdistanca</option>
+                    </select>
+                </div>
+
+                <!-- 6. Görünüm -->
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <div class="setting-name">Görünüm</div>
+                        <div class="setting-desc">Ekran renk teması</div>
+                    </div>
+                    <select id="opt-theme" class="setting-select" onchange="applyTheme(this.value)">
+                        <option value="dark">Koyu Uzay</option>
+                        <option value="neon">Neon Mor-Mavi</option>
+                        <option value="light">Açık Gündüz</option>
+                    </select>
+                </div>
+
+                <!-- 7. Konum (Neredeysek ülke o) -->
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <div class="setting-name">Konum (Bulunduğunuz Ülke)</div>
+                        <div class="setting-desc" id="detected-country-hint">Otomatik algılandı</div>
+                    </div>
+                    <select id="opt-country" class="setting-select" onchange="applyCountry(this.value)">
+                        <option value="auto">Otomatik Algıla</option>
+                        <option value="Türkiye">Türkiye</option>
+                        <option value="Furdistan">Furdistan</option>
+                        <option value="Azerbaycan">Azerbaycan</option>
+                        <option value="Almanya">Almanya</option>
+                        <option value="ABD">ABD</option>
+                        <option value="İngiltere">İngiltere</option>
+                        <option value="Japonya">Japonya</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- ALTTA HESAP OLUŞTUR VE GİRİŞ YAP -->
+            <div style="border-top: 1px solid var(--border-color); padding-top: 16px;">
+                <div class="auth-tabs">
+                    <button class="auth-tab-btn active" id="tab-signup" onclick="switchAuthMode('signup')">Hesap Oluştur</button>
+                    <button class="auth-tab-btn" id="tab-login" onclick="switchAuthMode('login')">Giriş Yap</button>
+                </div>
+
+                <form id="signup-form" onsubmit="handleAuthSubmit(event, 'signup')">
+                    <input type="text" id="signup-name" class="auth-input" placeholder="Ad Soyad" required>
+                    <input type="email" id="signup-email" class="auth-input" placeholder="E-posta adresi" required>
+                    <input type="password" id="signup-pass" class="auth-input" placeholder="Şifre oluştur" required>
+                    <button type="submit" class="primary-action-btn">Hesap Oluştur</button>
+                </form>
+
+                <form id="login-form" style="display:none;" onsubmit="handleAuthSubmit(event, 'login')">
+                    <input type="email" id="login-email" class="auth-input" placeholder="E-posta adresi" required>
+                    <input type="password" id="login-pass" class="auth-input" placeholder="Şifre" required>
+                    <button type="submit" class="primary-action-btn">Giriş Yap</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 1: NODEX HAKKINDA (4 MADDE TAM LİSTE) -->
+    <div id="about-modal" class="modal-overlay" onclick="closeOnOutside(event, 'about-modal')">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Nodex Hakkında</h2>
+                <button class="close-btn" onclick="closeModal('about-modal')">✕</button>
+            </div>
+
+            <div class="founder-banner">
+                <strong>Kurucu & Geliştirici:</strong> Kurucusu <strong>Melih Serdar Öksüz</strong>, Nodex arama motorunu geliştirmiştir.
+            </div>
+
+            <h3 style="margin-bottom: 14px; font-size: 1.15rem; color: var(--text-main);">Daha Fazla Geliştirdikleri:</h3>
+
+            <!-- 1. ZEVRA AI -->
+            <div class="project-item">
+                <h4>1. Yerli Milli Yapay Zeka Bölümü — Zevra AI</h4>
+                <p>Yapay zekanın adı <strong>Zevra AI</strong>'dır. Melih Serdar Öksüz bu yapay zekayı sıfırdan geliştirmiştir.</p>
+                <p><strong>Nasıl kullanılır?:</strong> Gemini API bağlantısıyla çalışmaktadır.</p>
+                <a href="https://zevra-pro.netlify.app" target="_blank" class="project-link">zevra-pro.netlify.app ↗</a>
+            </div>
+
+            <!-- 2. NOVATHVALE 2 -->
+            <div class="project-item">
+                <h4>2. Oyun Projesi — Novathvale 2</h4>
+                <p>Melih Serdar Öksüz tarafından geliştirilmiş bir oyundur. Adı <strong>Novathvale 2</strong>'dir ve aksiyon dolu bir soygun oyunu tarzındadır.</p>
+            </div>
+
+            <!-- 3. VOİD SOSYAL MEDYA -->
+            <div class="project-item">
+                <h4>3. Sosyal Medya Denemesi — VOİD</h4>
+                <p>Melih Serdar Öksüz bir sosyal medya platformu yapma denemesi gerçekleştirmiştir. Projenin adı <strong>VOİD</strong> sitesidir.</p>
+                <a href="https://void-sitesi.netlify.app" target="_blank" class="project-link">void-sitesi.netlify.app ↗</a>
+            </div>
+
+            <!-- 4. MICRO ULUS — FURDİSTAN -->
+            <div class="project-item">
+                <h4>4. Micro Ulus — Furdistan</h4>
+                <p><strong>Melih Serdar Öksüz</strong> bir micro ulus projesi, ülkesini yapmıştır. Dili bile vardır.</p>
+                <a href="https://furdistan.netlify.app" target="_blank" class="project-link">furdistan.netlify.app ↗</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: SİTE EKLE -->
+    <div id="add-site-modal" class="modal-overlay" onclick="closeOnOutside(event, 'add-site-modal')">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Nodex Dizinine Site Ekle</h2>
+                <button class="close-btn" onclick="closeModal('add-site-modal')">✕</button>
+            </div>
+
+            <div class="long-article-box">
+                <h4>Nodex Web İndeksleme ve Site Kayıt Rehberi</h4>
+                <p>
+                    Nodex Arama Motoru, bağımsız geliştiricilerin, blog yazarlarının, haber portallarının, mikro ulus projelerinin ve eğitim platformlarının internette daha kolay keşfedilmesini sağlamak amacıyla tasarlanmış açık indeksleme sistemine sahiptir. Geleneksel arama motorlarında yeni kurulan web sitelerinin dizine eklenmesi haftalar sürebilirken, Nodex Site Ekleme Modülü sayesinde web siteniz doğrudan arama motorunun yerel dizinine anında kaydedilir.
+                </p>
+                <p>
+                    Sitenizi eklerken başlık kısmının anlaşılır olmasına, alan adının (URL) eksiksiz yazılmasına ve açıklama bölümünde sitenizin hangi konularda içerik ürettiğinin net biçimde belirtilmesine özen gösteriniz. Eklediğiniz siteler, kullanıcılar Nodex üzerinde arama yaptığında <strong>"Tümü"</strong> sekmesinde ilgili anahtar kelimelerle birlikte doğrudan listelenecektir. Zararlı yazılım barındıran, yanıltıcı yönlendirme yapan veya telif haklarını ihlal eden bağlantılar otomatik filtreleme kuralları gereği dizin dışı bırakılır.
+                </p>
+            </div>
+
+            <form onsubmit="handleAddSite(event)" style="background: var(--bg-color); padding: 18px; border-radius: 14px; border: 1px solid var(--border-color);">
+                <h4 style="color: var(--accent-green); margin-bottom: 12px;">Yeni Web Sitesi Kaydet</h4>
+                <input type="text" id="new-site-title" class="auth-input" placeholder="Site Başlığı (Örn: TeknoBlog Türkiye)" required>
+                <input type="url" id="new-site-url" class="auth-input" placeholder="Site Adresi (Örn: https://ornek-site.com)" required>
+                <input type="text" id="new-site-tag" class="auth-input" placeholder="Kategori Etiketi (Örn: TEKNOLOJİ, BLOG, HABER)" required>
+                <textarea id="new-site-desc" class="auth-input" rows="3" placeholder="Siteniz hakkında kısa açıklama yazın..." required></textarea>
+                <button type="submit" class="primary-action-btn">Siteyi Nodex'e Ekle</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: POLİTİKA VE ŞARTLAR -->
+    <div id="policy-modal" class="modal-overlay" onclick="closeOnOutside(event, 'policy-modal')">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Politika ve Kullanım Şartları</h2>
+                <button class="close-btn" onclick="closeModal('policy-modal')">✕</button>
+            </div>
+
+            <div class="long-article-box">
+                <h4>1. Nodex Gizlilik Politikası ve Veri Koruma İlkeleri</h4>
+                <p>
+                    Nodex, kullanıcı gizliliğini merkeze alan yeni nesil bir arama motoru mimarisiyle Melih Serdar Öksüz tarafından geliştirilmiştir. Arama çubuğuna yazdığınız sorgular, incelediğiniz görseller ve takip ettiğiniz haber kanalları üçüncü taraf reklam ağlarına satılmaz, profilleme amacıyla ticari kurumlarla paylaşılmaz ve tarayıcı oturumunuz dışında izinsiz şekilde depolanmaz. Hesap oluşturma bölümünde girdiğiniz ad, soyad, e-posta ve profil fotoğrafı bilgileri yalnızca tarayıcınızdaki oturum deneyimini kişiselleştirmek için kullanılır.
+                </p>
+
+                <h4>2. Dış Kaynak Bağlantıları ve İçerik Sorumluluğu</h4>
+                <p>
+                    Nodex; Wikipedia, MicroWiki, Wikimedia Commons, Furdistan, TRT Haber, NTV, CNN Türk, Haber Global, BBC Türkçe ve YouTube haber kanalları gibi kamuya açık bilgi ve medya kaynaklarını tek bir arayüzde birleştiren bir erişim köprüsüdür. İlgili platformlarda yayınlanan haber metinleri, video yayınları ve ansiklopedik maddelerin telif hakları ile içerik doğruluğu ilgili yayıncı kuruluşların kendi sorumluluğundadır. Nodex, kullanıcıların bilgiye hızlı, tarafsız ve çok kaynaklı biçimde ulaşmasını hedefler.
+                </p>
+
+                <h4>3. Kullanıcı Kullanım Şartları ve Topluluk Kuralları</h4>
+                <p>
+                    Nodex platformunu ve "Site Ekle" özelliğini kullanan her ziyaretçi; Türkiye Cumhuriyeti yasalarına, uluslararası dijital telif kurallarına ve genel etik ilkelere uymayı kabul etmiş sayılır. Otomatik bot saldırılarıyla arama motoru altyapısını yavaşlatmaya çalışmak, sahte veya zararlı bağlantıları dizine eklemek ve sistem güvenliğini ihlal etmeye yönelik girişimlerde bulunmak kesinlikle yasaktır. Nodex geliştirici ekibi, platform arayüzünü, arama algoritmalarını ve hizmet koşullarını kullanıcı deneyimini iyileştirmek amacıyla güncelleme hakkını saklı tutar.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: KONUM BİLGİSİ -->
+    <div id="turkey-modal" class="modal-overlay" onclick="closeOnOutside(event, 'turkey-modal')">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2 id="modal-location-title">📍 Konum ve Bölge: Türkiye</h2>
+                <button class="close-btn" onclick="closeModal('turkey-modal')">✕</button>
+            </div>
+
+            <div class="long-article-box">
+                <h4>Bölgeye Duyarlı Akıllı Arama ve Haber Önceliklendirme Sistemi</h4>
+                <p>
+                    Nodex arama motoru bulunduğunuz konumu ve ülke ayarını (<strong id="modal-country-inline">Türkiye</strong>) otomatik olarak algılayarak çalışır. Bu ayar sayesinde gerçekleştirdiğiniz tüm web, görsel ve video haber aramalarında bulunduğunuz bölgeye uygun kaynaklara, yerel haber kanallarına ve Wikipedia / MicroWiki ansiklopedi kayıtlarına öncelik verilir.
+                </p>
+                <p>
+                    Konum tabanlı akıllı yönlendirme altyapısı, cihazınızın saat dilimi ve bölge bilgilerini kullanarak arama sonuçlarını en alakalı sıraya göre düzenler. Sağ üstteki üç çizgi menüsündeki <strong>Ayarlar</strong> bölümünden konumunuzu dilediğiniz zaman değiştirebilir veya otomatik algılamada bırakabilirsiniz.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentQuery = "";
+        let currentTab = "tumu";
+        let loaderTimer = null;
+        let fetchedImagesList = [];
+        let searchHistory = JSON.parse(localStorage.getItem("nodex_history") || "[]");
+
+        // VARSAYILAN AYARLAR
+        let nodexSettings = Object.assign({
+            newTab: true,
+            suggestions: true,
+            history: true,
+            spellcheck: true,
+            language: "tr",
+            theme: "dark",
+            country: "auto"
+        }, JSON.parse(localStorage.getItem("nodex_settings") || "{}"));
+
+        // YAZIM HATASI DÜZELTME SÖZLÜĞÜ
+        const spellCorrectionMap = {
+            "ortadogu": "Ortadoğu",
+            "orta dogu": "Ortadoğu",
+            "mikroulus": "Mikro uluslar",
+            "mikro ulus": "Mikro uluslar",
+            "microwiki": "MicroWiki",
+            "furdistan": "Furdistan",
+            "furdistn": "Furdistan",
+            "zevra": "Zevra AI",
+            "novathvale": "Novathvale 2",
+            "polis merkezi": "Polis Merkezi",
+            "polis mrkezi": "Polis Merkezi",
+            "yapay zka": "Yapay Zeka",
+            "wikipedya": "Wikipedia",
+            "yutube": "YouTube"
+        };
+
+        // ARAMA TAHMİNLERİ HAVUZU
+        const defaultPredictions = [
+            "Furdistan Micro Ulus Resmi Sitesi",
+            "MicroWiki Mikro Uluslar Ansiklopedisi",
+            "Zevra AI Yerli Milli Yapay Zeka",
+            "Novathvale 2 Soygun Oyunu",
+            "VOİD Sosyal Medya Platformu",
+            "Ortadoğu Son Dakika Haberleri",
+            "Polis Merkezi ve Emniyet Birimleri",
+            "Wikipedia Özgür Ansiklopedi",
+            "TRT Haber Canlı Yayın YouTube",
+            "Uzay ve Evren Fotoğrafları"
+        ];
+
+        // DİL ÇEVİRİLERİ
+        const i18nStrings = {
+            tr: { searchBtn: "Ara", about: "Nodex Hakkında", addSite: "➕ Site Ekle", policy: "📜 Politika ve Şartlar", tabs: ["Tümü", "Görseller", "Videolar", "Haberler", "Yerler", "Araçlar"] },
+            en: { searchBtn: "Search", about: "About Nodex", addSite: "➕ Add Site", policy: "📜 Policy & Terms", tabs: ["All", "Images", "Videos", "News", "Places", "Tools"] },
+            de: { searchBtn: "Suchen", about: "Über Nodex", addSite: "➕ Seite hinzufügen", policy: "📜 Richtlinien", tabs: ["Alle", "Bilder", "Videos", "Nachrichten", "Orte", "Tools"] },
+            es: { searchBtn: "Buscar", about: "Acerca de Nodex", addSite: "➕ Añadir sitio", policy: "📜 Política y Términos", tabs: ["Todo", "Imágenes", "Videos", "Noticias", "Lugares", "Herramientas"] },
+            fr: { searchBtn: "Rechercher", about: "À propos de Nodex", addSite: "➕ Ajouter un site", policy: "📜 Politique", tabs: ["Tout", "Images", "Vidéos", "Actualités", "Lieux", "Outils"] },
+            ar: { searchBtn: "بحث", about: "حول نوديكس", addSite: "➕ أضف موقعاً", policy: "📜 السياسة والشروط", tabs: ["الكل", "صور", "فيديو", "أخبار", "أماكن", "أدوات"] },
+            fd: { searchBtn: "Araxa", about: "Nodex Furda", addSite: "➕ Sita Ekle", policy: "📜 Kuralla Furda", tabs: ["Hemi", "Resma", "Videola", "Habera", "Yerla", "Aletla"] }
+        };
+
+        // KAYITLI EKOSİSTEM VE KULLANICININ EKLEDİĞİ SİTELER
+        const extraSitesDatabase = [
+            {
+                title: "Furdistan — Melih Serdar Öksüz Micro Ulus Resmi Ülke Sitesi",
+                url: "https://furdistan.netlify.app",
+                source: "furdistan.netlify.app",
+                type: "MICRO ULUS • FURDİSTAN",
+                badgeClass: "badge-microwiki",
+                desc: "Melih Serdar Öksüz tarafından kurulan, kendine özgü dili ve kültürü bulunan resmi micro ulus projesi."
+            },
+            {
+                title: "MicroWiki - Dünyanın En Büyük Mikro Ulus Ansiklopedisi",
+                url: "https://micronations.wiki",
+                source: "micronations.wiki",
+                type: "MICRO WİKİ",
+                badgeClass: "badge-microwiki",
+                desc: "Mikro uluslar, bağımsız topluluklar, bayraklar, mikro ulus tarihi ve diplomatik ilişkiler hakkında kapsamlı ansiklopedi."
+            },
+            {
+                title: "Zevra AI - Yerli ve Milli Yapay Zeka Asistanı",
+                url: "https://zevra-pro.netlify.app",
+                source: "zevra-pro.netlify.app",
+                type: "NODEX EKOSİSTEMİ",
+                badgeClass: "badge-wiki",
+                desc: "Melih Serdar Öksüz tarafından sıfırdan geliştirilen, Gemini API bağlantılı yerli yapay zeka platformu."
+            },
+            {
+                title: "VOİD - Yeni Nesil Sosyal Medya Denemesi",
+                url: "https://void-sitesi.netlify.app",
+                source: "void-sitesi.netlify.app",
+                type: "NODEX EKOSİSTEMİ",
+                badgeClass: "badge-wiki",
+                desc: "Melih Serdar Öksüz tarafından tasarlanan modern sosyal ağ deneyimi."
+            }
+        ];
+
+        // SAYFA AÇILDIĞINDA AYARLARI VE KONUMU OTOMATİK YÜKLE
+        window.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("opt-new-tab").checked = nodexSettings.newTab;
+            document.getElementById("opt-suggestions").checked = nodexSettings.suggestions;
+            document.getElementById("opt-history").checked = nodexSettings.history;
+            document.getElementById("opt-spellcheck").checked = nodexSettings.spellcheck;
+            document.getElementById("opt-language").value = nodexSettings.language;
+            document.getElementById("opt-theme").value = nodexSettings.theme;
+            document.getElementById("opt-country").value = nodexSettings.country;
+
+            applyTheme(nodexSettings.theme);
+            applyLanguage(nodexSettings.language);
+            applyCountry(nodexSettings.country);
+            renderHistoryInDrawer();
+        });
+
+        function saveSettings() {
+            nodexSettings.newTab = document.getElementById("opt-new-tab").checked;
+            nodexSettings.suggestions = document.getElementById("opt-suggestions").checked;
+            nodexSettings.history = document.getElementById("opt-history").checked;
+            nodexSettings.spellcheck = document.getElementById("opt-spellcheck").checked;
+            nodexSettings.language = document.getElementById("opt-language").value;
+            nodexSettings.theme = document.getElementById("opt-theme").value;
+            nodexSettings.country = document.getElementById("opt-country").value;
+            localStorage.setItem("nodex_settings", JSON.stringify(nodexSettings));
+        }
+
+        function getLinkTargetAttr() {
+            return nodexSettings.newTab ? 'target="_blank" rel="noopener"' : '';
+        }
+
+        function applyTheme(theme) {
+            document.body.classList.remove("theme-light", "theme-neon");
+            if (theme === "light") document.body.classList.add("theme-light");
+            if (theme === "neon") document.body.classList.add("theme-neon");
+            saveSettings();
+        }
+
+        function applyLanguage(lang) {
+            const pack = i18nStrings[lang] || i18nStrings.tr;
+            document.getElementById("home-search-btn").textContent = pack.searchBtn;
+            document.getElementById("header-search-btn").textContent = pack.searchBtn;
+            document.getElementById("btn-about-nodex").textContent = pack.about;
+            document.getElementById("btn-add-site").textContent = pack.addSite;
+            document.getElementById("btn-policy").textContent = pack.policy;
+
+            const tabIds = ["tab-lbl-tumu", "tab-lbl-gorseller", "tab-lbl-videolar", "tab-lbl-haberler", "tab-lbl-yerler", "tab-lbl-araclar"];
+            tabIds.forEach((id, idx) => {
+                const el = document.getElementById(id);
+                if (el && pack.tabs[idx]) el.textContent = pack.tabs[idx];
+            });
+            saveSettings();
+        }
+
+        function detectAutoCountry() {
+            try {
+                const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+                const lang = (navigator.language || "").toLowerCase();
+                if (tz.includes("Istanbul") || lang.startsWith("tr")) return "Türkiye";
+                if (tz.includes("Baku") || lang.startsWith("az")) return "Azerbaycan";
+                if (tz.includes("Berlin") || lang.startsWith("de")) return "Almanya";
+                if (tz.includes("London") || lang === "en-gb") return "İngiltere";
+                if (tz.includes("America") || lang === "en-us") return "ABD";
+                if (tz.includes("Tokyo") || lang.startsWith("ja")) return "Japonya";
+            } catch (e) {}
+            return "Türkiye";
+        }
+
+        function applyCountry(val) {
+            const detected = detectAutoCountry();
+            const finalCountry = (val === "auto") ? detected : val;
+            document.getElementById("footer-country-label").textContent = finalCountry;
+            document.getElementById("detected-country-hint").textContent =
+                val === "auto" ? `Otomatik algılandı: ${detected}` : `Seçili ülke: ${finalCountry}`;
+            document.getElementById("modal-location-title").textContent = `📍 Konum ve Bölge: ${finalCountry}`;
+            document.getElementById("modal-country-inline").textContent = finalCountry;
+            saveSettings();
+        }
+
+        // ARAMA GEÇMİŞİ YÖNETİMİ
+        function addToHistory(q) {
+            if (!nodexSettings.history || !q) return;
+            searchHistory = searchHistory.filter(item => item.toLowerCase() !== q.toLowerCase());
+            searchHistory.unshift(q);
+            if (searchHistory.length > 15) searchHistory.pop();
+            localStorage.setItem("nodex_history", JSON.stringify(searchHistory));
+            renderHistoryInDrawer();
+        }
+
+        function clearSearchHistory() {
+            searchHistory = [];
+            localStorage.removeItem("nodex_history");
+            renderHistoryInDrawer();
+        }
+
+        function renderHistoryInDrawer() {
+            const box = document.getElementById("drawer-history-container");
+            if (!nodexSettings.history) {
+                box.innerHTML = `<span style="font-size:0.78rem; color:var(--text-muted);">Arama geçmişi kapalı.</span>`;
+                return;
+            }
+            if (searchHistory.length === 0) {
+                box.innerHTML = `<span style="font-size:0.78rem; color:var(--text-muted);">Henüz kaydedilmiş arama geçmişi yok.</span>`;
+                return;
+            }
+            box.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <span style="font-size:0.75rem; color:var(--text-muted);">Son Aramalarınız:</span>
+                    <button onclick="clearSearchHistory()" style="background:none; border:none; color:#f87171; font-size:0.75rem; cursor:pointer; font-weight:700;">Temizle</button>
+                </div>
+                ${searchHistory.map(item => `
+                    <span class="history-chip" onclick="closeModal('drawer-overlay'); quickSearch('${item.replace(/'/g, "\\'")}')">🕒 ${item}</span>
+                `).join('')}
+            `;
+        }
+
+        // ARAMA TAHMİNLERİ VE GEÇMİŞ ÖNERİLERİ AÇILIR KUTUSU
+        function updateSuggestions(source) {
+            const input = document.getElementById(source === "home" ? "home-search-input" : "header-search-input");
+            const box = document.getElementById(source === "home" ? "home-suggestions" : "header-suggestions");
+            const val = input.value.trim().toLowerCase();
+
+            let items = [];
+
+            if (nodexSettings.history && searchHistory.length > 0) {
+                const matchedHist = searchHistory.filter(h => !val || h.toLowerCase().includes(val)).slice(0, 4);
+                matchedHist.forEach(h => items.push({ text: h, badge: "Geçmiş" }));
+            }
+
+            if (nodexSettings.suggestions) {
+                const matchedPred = defaultPredictions.filter(p =>
+                    (!val || p.toLowerCase().includes(val)) && !items.some(i => i.text.toLowerCase() === p.toLowerCase())
+                ).slice(0, 5);
+                matchedPred.forEach(p => items.push({ text: p, badge: "Tahmin" }));
+            }
+
+            if (items.length === 0) {
+                box.style.display = "none";
+                return;
+            }
+
+            box.innerHTML = items.map(it => `
+                <div class="suggestion-item" onclick="selectSuggestion('${it.text.replace(/'/g, "\\'")}', '${source}')">
+                    <span>${it.badge === 'Geçmiş' ? '🕒' : '🔍'} ${it.text}</span>
+                    <span class="suggestion-badge">${it.badge}</span>
+                </div>
+            `).join('');
+            box.style.display = "block";
+        }
+
+        function selectSuggestion(text, source) {
+            document.getElementById("home-suggestions").style.display = "none";
+            document.getElementById("header-suggestions").style.display = "none";
+            document.getElementById(source === "home" ? "home-search-input" : "header-search-input").value = text;
+            handleSearch({ preventDefault: () => {} }, source);
+        }
+
+        document.addEventListener("click", (e) => {
+            if (!e.target.closest(".search-box-wrapper") && !e.target.closest(".header-search-wrapper")) {
+                document.getElementById("home-suggestions").style.display = "none";
+                document.getElementById("header-suggestions").style.display = "none";
+            }
+        });
+
+        // YÜKLENME ANİMASYONU İLE SONUÇLARI GÖSTERME
+        function triggerLoadingAndRender() {
+            const loader = document.getElementById('nodex-loader');
+            const outputWrapper = document.getElementById('results-output-wrapper');
+
+            if (loaderTimer) clearTimeout(loaderTimer);
+
+            outputWrapper.style.display = 'none';
+            loader.style.display = 'flex';
+
+            loaderTimer = setTimeout(async () => {
+                await renderResults();
+                loader.style.display = 'none';
+                outputWrapper.style.display = 'block';
+            }, 850);
+        }
+
+        // ARAMA İŞLEMİ
+        function handleSearch(e, source) {
+            e.preventDefault();
+            document.getElementById("home-suggestions").style.display = "none";
+            document.getElementById("header-suggestions").style.display = "none";
+
+            const inputEl = source === 'home' 
+                ? document.getElementById('home-search-input') 
+                : document.getElementById('header-search-input');
+            
+            let query = inputEl.value.trim();
+            if (!query) return;
+
+            // YAZIM HATALARINI DÜZELTME KONTROLÜ
+            const spellBox = document.getElementById("spellcheck-container");
+            spellBox.innerHTML = "";
+            if (nodexSettings.spellcheck && spellCorrectionMap[query.toLowerCase()]) {
+                const corrected = spellCorrectionMap[query.toLowerCase()];
+                if (corrected.toLowerCase() !== query.toLowerCase()) {
+                    spellBox.innerHTML = `
+                        <div class="spellcheck-banner">
+                            ✨ Yazım hatası düzeltildi: <strong>"${query}"</strong> yerine 
+                            <button onclick="quickSearch('${corrected}')">${corrected}</button> sonuçları gösteriliyor.
+                        </div>
+                    `;
+                    query = corrected;
+                }
+            }
+
+            currentQuery = query;
+            addToHistory(query);
+
+            document.getElementById('home-search-input').value = query;
+            document.getElementById('header-search-input').value = query;
+
+            document.getElementById('home-view').style.display = 'none';
+            document.getElementById('results-view').style.display = 'block';
+
+            triggerLoadingAndRender();
+        }
+
+        function quickSearch(text) {
+            document.getElementById('home-search-input').value = text;
+            handleSearch({ preventDefault: () => {} }, 'home');
+        }
+
+        // GERİ OK TUŞU İLE ANA EKRANA DÖNÜŞ
+        function goHome() {
+            document.getElementById('results-view').style.display = 'none';
+            document.getElementById('home-view').style.display = 'flex';
+            closeImagePreview();
+        }
+
+        function switchTab(tabName) {
+            currentTab = tabName;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tabName);
+            });
+            triggerLoadingAndRender();
+        }
+
+        // WİKİMEDİA COMMONS VE WİKİPEDİA'DAN GERÇEK GÖRSELLERİ DOĞRUDAN NODEX İÇİNE ÇEKME
+        async function fetchRealImagesInsideNodex(query) {
+            let images = [];
+            try {
+                const trWikiUrl = `https://tr.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=12&prop=pageimages&piprop=original|thumbnail&pithumbsize=500&format=json&origin=*`;
+                const trRes = await fetch(trWikiUrl);
+                const trData = await trRes.json();
+
+                if (trData.query && trData.query.pages) {
+                    Object.values(trData.query.pages).forEach(page => {
+                        if (page.thumbnail && page.thumbnail.source) {
+                            images.push({
+                                title: page.title,
+                                thumb: page.thumbnail.source,
+                                full: (page.original && page.original.source) ? page.original.source : page.thumbnail.source,
+                                sourceName: "Wikipedia / Wikimedia Commons"
+                            });
+                        }
+                    });
+                }
+
+                const commonsUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=filetype:bitmap+${encodeURIComponent(query)}&gsrnamespace=6&gsrlimit=16&prop=imageinfo&iiprop=url&iiurlwidth=500&format=json&origin=*`;
+                const commonsRes = await fetch(commonsUrl);
+                const commonsData = await commonsRes.json();
+
+                if (commonsData.query && commonsData.query.pages) {
+                    Object.values(commonsData.query.pages).forEach(item => {
+                        if (item.imageinfo && item.imageinfo[0]) {
+                            const info = item.imageinfo[0];
+                            const cleanTitle = item.title.replace("File:", "").replace(/\.[^/.]+$/, "");
+                            if (info.thumburl && !images.some(existing => existing.thumb === info.thumburl)) {
+                                images.push({
+                                    title: cleanTitle,
+                                    thumb: info.thumburl,
+                                    full: info.url || info.thumburl,
+                                    sourceName: "Wikimedia Commons Arşivi"
+                                });
+                            }
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error("Görsel çekme hatası:", err);
+            }
+            return images;
+        }
+
+        function openImagePreview(index) {
+            const item = fetchedImagesList[index];
+            if (!item) return;
+
+            document.querySelectorAll('.image-card').forEach((card, i) => {
+                card.classList.toggle('selected', i === index);
+            });
+
+            const pane = document.getElementById('image-preview-pane');
+            document.getElementById('preview-large-img').src = item.full;
+            document.getElementById('preview-title').textContent = item.title;
+            document.getElementById('preview-source').textContent = "Kaynak: " + item.sourceName;
+            pane.style.display = 'block';
+            pane.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function closeImagePreview() {
+            const pane = document.getElementById('image-preview-pane');
+            if (pane) pane.style.display = 'none';
+            document.querySelectorAll('.image-card').forEach(card => card.classList.remove('selected'));
+        }
+
+        async function renderResults() {
+            const container = document.getElementById('results-content');
+            const stats = document.getElementById('results-stats');
+            const qLower = currentQuery.toLowerCase();
+            const encodedQ = encodeURIComponent(currentQuery);
+            const targetAttr = getLinkTargetAttr();
+
+            if (currentTab === 'tumu') {
+                const isMicroNation = qLower.includes("mikro") || qLower.includes("micro") || qLower.includes("ulus") || qLower.includes("micronation") || qLower.includes("furdistan");
+                let results = [];
+
+                if (isMicroNation) {
+                    results.push(
+                        {
+                            title: `Furdistan — Melih Serdar Öksüz Micro Ulus Ülkesi (Kendi Diliyle)`,
+                            url: `https://furdistan.netlify.app`,
+                            source: `furdistan.netlify.app`,
+                            type: "FURDİSTAN ÜLKESİ",
+                            badgeClass: "badge-microwiki",
+                            desc: `Melih Serdar Öksüz tarafından oluşturulan, kendi dili bulunan micro ulus projesi ve resmi ülke portalı.`
+                        },
+                        {
+                            title: `"${currentQuery}" - MicroWiki (Mikro Uluslar Ansiklopedisi)`,
+                            url: `https://micronations.wiki/wiki/Special:Search?search=${encodedQ}`,
+                            source: `micronations.wiki › wiki › ${currentQuery}`,
+                            type: "MICRO WİKİ ÖZEL",
+                            badgeClass: "badge-microwiki",
+                            desc: `Mikro uluslar, kurucu liderler, bayraklar, anayasalar ve mikro ulus tarihi hakkında MicroWiki üzerindeki doğrudan ansiklopedi kaydı.`
+                        }
+                    );
+                }
+
+                results.push(
+                    {
+                        title: `"${currentQuery}" - Wikipedia Özgür Ansiklopedi`,
+                        url: `https://tr.wikipedia.org/w/index.php?search=${encodedQ}`,
+                        source: `tr.wikipedia.org › wiki › ${currentQuery}`,
+                        type: "WİKİPEDİA",
+                        badgeClass: "badge-wiki",
+                        desc: `${currentQuery} konusu hakkında Wikipedia üzerindeki doğrulanmış ansiklopedik makale, tarihçe ve kaynaklar.`
+                    },
+                    {
+                        title: `"${currentQuery}" - MicroWiki Küresel Mikro Ulus Ağı`,
+                        url: `https://micronations.wiki/wiki/Special:Search?search=${encodedQ}`,
+                        source: `micronations.wiki › search › ${currentQuery}`,
+                        type: "MICRO WİKİ",
+                        badgeClass: "badge-microwiki",
+                        desc: `MicroWiki veritabanında "${currentQuery}" ile ilgili mikro ulus sayfaları, topluluklar ve belgeler.`
+                    },
+                    {
+                        title: `"${currentQuery}" - YouTube Videoları ve Haber Kanalları`,
+                        url: `https://www.youtube.com/results?search_query=${encodedQ}`,
+                        source: `youtube.com › results › ${currentQuery}`,
+                        type: "YOUTUBE VİDEO",
+                        badgeClass: "badge-yt",
+                        desc: `YouTube üzerindeki "${currentQuery}" videoları, belgeseller, incelemeler ve haber yayınları.`
+                    },
+                    {
+                        title: `"${currentQuery}" - BBC News Türkçe & Euronews Dünya Haberleri`,
+                        url: `https://www.bbc.com/turkce/search?q=${encodedQ}`,
+                        source: `bbc.com › turkce › ${currentQuery}`,
+                        type: "DÜNYA HABERLERİ",
+                        badgeClass: "badge-news",
+                        desc: `BBC Türkçe, Euronews ve uluslararası haber ajanslarının "${currentQuery}" hakkındaki derinlemesine analizleri.`
+                    },
+                    {
+                        title: `"${currentQuery}" - Anadolu Ajansı (AA) Güncel Akış`,
+                        url: `https://www.aa.com.tr/tr/search/?s=${encodedQ}`,
+                        source: `aa.com.tr › gundem › ${currentQuery}`,
+                        type: "HABER AJANSI",
+                        badgeClass: "badge-news",
+                        desc: `Anadolu Ajansı ve küresel haber merkezlerinden "${currentQuery}" ile ilgili anlık bültenler.`
+                    },
+                    ...extraSitesDatabase
+                );
+
+                stats.textContent = `"${currentQuery}" için Wikipedia, MicroWiki, Furdistan, YouTube ve Dünya Ajanslarında ${results.length * 1840} sonuç bulundu`;
+
+                container.innerHTML = results.map(item => `
+                    <div class="web-result-card">
+                        <div class="result-source">
+                            <span class="${item.badgeClass}">${item.type}</span>
+                            <span>${item.source}</span>
+                        </div>
+                        <a href="${item.url}" ${targetAttr} class="result-title">${item.title}</a>
+                        <p class="result-snippet">${item.desc}</p>
+                    </div>
+                `).join('');
+
+            } else if (currentTab === 'gorseller') {
+                fetchedImagesList = await fetchRealImagesInsideNodex(currentQuery);
+
+                if (fetchedImagesList.length === 0) {
+                    stats.textContent = `"${currentQuery}" için görsel bulunamadı. Farklı bir kelime deneyebilirsiniz.`;
+                    container.innerHTML = `<p style="color:var(--text-muted);">Aradığınız terime ait açık lisanslı görsel kaydı bulunamadı.</p>`;
+                    return;
+                }
+
+                stats.textContent = `"${currentQuery}" için Wikimedia & Wikipedia veritabanından ${fetchedImagesList.length} gerçek görsel Nodex içinde listelendi (İncelemek için birine tıklayın)`;
+
+                container.innerHTML = `
+                    <div class="images-layout">
+                        <div class="images-grid">
+                            ${fetchedImagesList.map((img, idx) => `
+                                <div class="image-card" onclick="openImagePreview(${idx})">
+                                    <img src="${img.thumb}" alt="${img.title}" loading="lazy">
+                                    <div class="image-card-info">
+                                        <div class="image-card-title">${img.title}</div>
+                                        <div class="image-card-cat">${img.sourceName}</div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <aside id="image-preview-pane" class="image-preview-pane">
+                            <div class="preview-pane-header">
+                                <span style="font-size:0.88rem; color:var(--accent-blue); font-weight:700;">Nodex Görsel İnceleme</span>
+                                <button class="preview-close-btn" onclick="closeImagePreview()" title="Kapat">✕</button>
+                            </div>
+                            <img id="preview-large-img" class="preview-large-img" src="" alt="Büyük Görsel">
+                            <h3 id="preview-title" style="font-size:1.05rem; margin-bottom:6px; line-height:1.4;"></h3>
+                            <p id="preview-source" style="font-size:0.85rem; color:var(--text-muted);"></p>
+                        </aside>
+                    </div>
+                `;
+
+            } else if (currentTab === 'videolar') {
+                stats.textContent = `"${currentQuery}" konusu ile ilgili YouTube videoları, belgeseller ve içerikler listeleniyor`;
+
+                const ytVideosList = [
+                    {
+                        channel: "YouTube • En Çok İzlenenler",
+                        videoTitle: `${currentQuery} Nedir? Detaylı Anlatım ve Bilinmeyen Gerçekler`,
+                        meta: "HD Video • YouTube Arama Sonucu",
+                        badge: "YOUTUBE VİDEO",
+                        url: `https://www.youtube.com/results?search_query=${encodedQ}`,
+                        thumb: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?auto=format&fit=crop&w=600&q=80"
+                    },
+                    {
+                        channel: "YouTube • Belgesel & Araştırma",
+                        videoTitle: `${currentQuery} Tarihi ve Derinlemesine Belgesel İncelemesi (Tam Bölüm)`,
+                        meta: "Belgesel • YouTube",
+                        badge: "BELGESEL",
+                        url: `https://www.youtube.com/results?search_query=${encodeURIComponent(currentQuery + ' belgesel')}`,
+                        thumb: "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=600&q=80"
+                    },
+                    {
+                        channel: "YouTube • Rehber & Eğitim",
+                        videoTitle: `${currentQuery} Hakkında Her Şey — Adım Adım Video Rehberi`,
+                        meta: "Eğitim & Rehber • YouTube",
+                        badge: "REHBER",
+                        url: `https://www.youtube.com/results?search_query=${encodeURIComponent(currentQuery + ' nasıl yapılır nedir')}`,
+                        thumb: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80"
+                    },
+                    {
+                        channel: "YouTube • Güncel Gelişmeler",
+                        videoTitle: `${currentQuery} İle İlgili Son Yüklenen Yeni Videolar (2026)`,
+                        meta: "Yeni Yüklenenler • YouTube",
+                        badge: "YENİ VİDEO",
+                        url: `https://www.youtube.com/results?search_query=${encodedQ}&sp=CAI%253D`,
+                        thumb: "https://images.unsplash.com/photo-1492619375914-88005aa9e8fb?auto=format&fit=crop&w=600&q=80"
+                    },
+                    {
+                        channel: "YouTube Shorts • Kısa Videolar",
+                        videoTitle: `60 Saniyede ${currentQuery} Özeti — Kısa YouTube Shorts Akışı`,
+                        meta: "Kısa Video • YouTube Shorts",
+                        badge: "SHORTS",
+                        url: `https://www.youtube.com/results?search_query=${encodeURIComponent(currentQuery + ' shorts')}`,
+                        thumb: "https://images.unsplash.com/photo-1536240478700-b869070f9279?auto=format&fit=crop&w=600&q=80"
+                    },
+                    {
+                        channel: "YouTube • Canlı Yayınlar",
+                        videoTitle: `${currentQuery} Konulu Canlı Yayınlar ve Sohbet Odaları`,
+                        meta: "Canlı Akış • YouTube Live",
+                        badge: "CANLI",
+                        url: `https://www.youtube.com/results?search_query=${encodeURIComponent(currentQuery + ' canlı')}`,
+                        thumb: "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?auto=format&fit=crop&w=600&q=80"
+                    }
+                ];
+
+                container.innerHTML = `
+                    <div class="news-grid">
+                        ${ytVideosList.map(video => `
+                            <div class="news-card">
+                                <a href="${video.url}" ${targetAttr} class="news-thumb-wrapper">
+                                    <img src="${video.thumb}" class="news-thumb" alt="${video.videoTitle}">
+                                    <span class="yt-live-tag">${video.badge}</span>
+                                    <div class="yt-play-badge">
+                                        <div class="yt-play-circle">▶</div>
+                                    </div>
+                                </a>
+                                <div class="news-body">
+                                    <div>
+                                        <span class="badge-yt" style="display:inline-block; margin-bottom:8px;">${video.channel}</span>
+                                        <a href="${video.url}" ${targetAttr} class="result-title" style="font-size:1.05rem;">${video.videoTitle}</a>
+                                    </div>
+                                    <span style="font-size:0.8rem; color:var(--accent-blue); margin-top:10px;">YouTube'da İzle ↗</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+
+            } else if (currentTab === 'haberler') {
+                stats.textContent = `"${currentQuery}" konusu ile ilgili YouTube Haber Kanalları videoları ve son dakika yayınları listeleniyor`;
+                
+                const ytNewsChannels = [
+                    {
+                        channel: "TRT Haber • YouTube Resmi Kanalı",
+                        videoTitle: `${currentQuery} Son Dakika Gelişmeleri ve Özel Haber Dosyası | TRT Haber`,
+                        meta: "Canlı Yayın & Video Arşivi • YouTube",
+                        url: `https://www.youtube.com/@trthaber/search?query=${encodedQ}`,
+                        thumb: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=600&q=80"
+                    },
+                    {
+                        channel: "NTV • YouTube Haber Kanalı",
+                        videoTitle: `${currentQuery} Hakkında Merak Edilen Tüm Detaylar ve Uzman Analizi | NTV`,
+                        meta: "Güncel Haber Videosu • YouTube",
+                        url: `https://www.youtube.com/@NTV/search?query=${encodedQ}`,
+                        thumb: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=600&q=80"
+                    },
+                    {
+                        channel: "CNN TÜRK • YouTube Haber Kanalı",
+                        videoTitle: `${currentQuery} Gündemi: Saha Bağlantıları ve Canlı Tartışma Programı | CNN TÜRK`,
+                        meta: "Son Dakika Yayını • YouTube",
+                        url: `https://www.youtube.com/@cnnturk/search?query=${encodedQ}`,
+                        thumb: "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=600&q=80"
+                    },
+                    {
+                        channel: "Haber Global • YouTube Resmi Kanalı",
+                        videoTitle: `${currentQuery} Dosyası: Dünyadan ve Türkiye'den Kritik Yansımalar | Haber Global`,
+                        meta: "Özel Bülten • YouTube",
+                        url: `https://www.youtube.com/@haberglobal/search?query=${encodedQ}`,
+                        thumb: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=600&q=80"
+                    },
+                    {
+                        channel: "BBC News Türkçe • YouTube Kanalı",
+                        videoTitle: `Uluslararası Basında ${currentQuery}: Derinlemesine Video Analiz | BBC Türkçe`,
+                        meta: "Dünya Haberleri • YouTube",
+                        url: `https://www.youtube.com/@BBCTurkce/search?query=${encodedQ}`,
+                        thumb: "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=600&q=80"
+                    },
+                    {
+                        channel: "Tüm YouTube Haber Kanalları Ortak Akışı",
+                        videoTitle: `"${currentQuery}" ile İlgili En Yeni Tüm YouTube Haber Videolarını İzle`,
+                        meta: "Canlı Arama Akışı • YouTube",
+                        url: `https://www.youtube.com/results?search_query=${encodeURIComponent(currentQuery + ' haber son dakika')}`,
+                        thumb: "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=600&q=80"
+                    }
+                ];
+
+                container.innerHTML = `
+                    <div class="news-grid">
+                        ${ytNewsChannels.map(video => `
+                            <div class="news-card">
+                                <a href="${video.url}" ${targetAttr} class="news-thumb-wrapper">
+                                    <img src="${video.thumb}" class="news-thumb" alt="${video.videoTitle}">
+                                    <span class="yt-live-tag">YOUTUBE HABER</span>
+                                    <div class="yt-play-badge">
+                                        <div class="yt-play-circle">▶</div>
+                                    </div>
+                                </a>
+                                <div class="news-body">
+                                    <div>
+                                        <span class="badge-yt" style="display:inline-block; margin-bottom:8px;">${video.channel}</span>
+                                        <a href="${video.url}" ${targetAttr} class="result-title" style="font-size:1.05rem;">${video.videoTitle}</a>
+                                    </div>
+                                    <span style="font-size:0.8rem; color:var(--accent-blue); margin-top:10px;">${video.meta} ↗</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+
+            } else if (currentTab === 'yerler') {
+                stats.textContent = `"${currentQuery}" için Harita ve Konum Bağlantıları`;
+                container.innerHTML = `
+                    <div class="places-grid">
+                        <div class="place-card">
+                            <h3 style="color:var(--accent-blue); margin-bottom:8px;">📍 "${currentQuery}" Haritada Gör</h3>
+                            <p style="color:var(--text-muted); font-size:0.92rem; margin-bottom:14px;">OpenStreetMap ve küresel uydu haritalarında "${currentQuery}" konumunu inceleyin.</p>
+                            <a href="https://www.openstreetmap.org/search?query=${encodedQ}" ${targetAttr} class="project-link">Haritada Aç ↗</a>
+                        </div>
+                        <div class="place-card">
+                            <h3 style="color:var(--accent-purple); margin-bottom:8px;">🏛️ MicroWiki Bölge & Ulus Haritası</h3>
+                            <p style="color:var(--text-muted); font-size:0.92rem; margin-bottom:14px;">Mikro ulusların coğrafi konumları ve bölge kayıtlarını MicroWiki üzerinde arayın.</p>
+                            <a href="https://micronations.wiki/wiki/Special:Search?search=${encodedQ}" ${targetAttr} class="project-link">MicroWiki'de Gör ↗</a>
+                        </div>
+                    </div>
+                `;
+
+            } else if (currentTab === 'araclar') {
+                stats.textContent = `Nodex Hızlı Web Araçları`;
+                container.innerHTML = `
+                    <div class="tools-grid">
+                        <div class="tool-box">
+                            <h3>🧮 Hızlı Hesap Makinesi</h3>
+                            <input type="text" id="calc-input" class="tool-input" placeholder="Örn: 25 * 48 + 120">
+                            <button class="primary-action-btn" onclick="calculateMath()">Hesapla</button>
+                            <p id="calc-result" style="margin-top:10px; font-weight:700; color:var(--accent-blue);"></p>
+                        </div>
+                        <div class="tool-box">
+                            <h3>🤖 Zevra AI Hızlı Erişim</h3>
+                            <p style="color:var(--text-muted); font-size:0.92rem; margin-bottom:12px;">
+                                Melih Serdar Öksüz tarafından sıfırdan geliştirilen Gemini API tabanlı yerli yapay zekayı doğrudan açın.
+                            </p>
+                            <a href="https://zevra-pro.netlify.app" ${targetAttr} class="project-link" style="display:block; text-align:center;">Zevra AI'ı Başlat ↗</a>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function calculateMath() {
+            const expr = document.getElementById('calc-input').value;
+            const resEl = document.getElementById('calc-result');
+            try {
+                if (/^[0-9+\-*/().\s]+$/.test(expr)) {
+                    resEl.textContent = "Sonuç: " + Function('"use strict";return (' + expr + ')')();
+                } else {
+                    resEl.textContent = "Geçerli bir matematiksel işlem girin.";
+                }
+            } catch {
+                resEl.textContent = "Hatalı ifade.";
+            }
+        }
+
+        // SİTE EKLEME İŞLEMİ
+        function handleAddSite(e) {
+            e.preventDefault();
+            const title = document.getElementById('new-site-title').value.trim();
+            const url = document.getElementById('new-site-url').value.trim();
+            const tag = document.getElementById('new-site-tag').value.trim().toUpperCase();
+            const desc = document.getElementById('new-site-desc').value.trim();
+
+            let cleanDomain = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+
+            extraSitesDatabase.unshift({
+                title: title,
+                url: url,
+                source: cleanDomain,
+                type: tag,
+                badgeClass: "badge-microwiki",
+                desc: desc
+            });
+
+            e.target.reset();
+            closeModal('add-site-modal');
+            alert(`"${title}" başarıyla Nodex dizinine eklendi! Artık aramalarda en üstte çıkacaktır.`);
+        }
+
+        // GENEL MODAL VE ÇEKMECE KONTROLLERİ
+        function openDrawer() {
+            renderHistoryInDrawer();
+            document.getElementById('drawer-overlay').style.display = 'flex';
+        }
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        function closeOnOutside(e, id) { if (e.target.id === id) closeModal(id); }
+
+        function switchAuthMode(mode) {
+            document.getElementById('tab-signup').classList.toggle('active', mode === 'signup');
+            document.getElementById('tab-login').classList.toggle('active', mode === 'login');
+            document.getElementById('signup-form').style.display = mode === 'signup' ? 'block' : 'none';
+            document.getElementById('login-form').style.display = mode === 'login' ? 'block' : 'none';
+        }
+
+        function handleAuthSubmit(e, mode) {
+            e.preventDefault();
+            if (mode === 'signup') {
+                const name = document.getElementById('signup-name').value;
+                const email = document.getElementById('signup-email').value;
+                document.getElementById('profile-display-name').textContent = name;
+                document.getElementById('profile-display-email').textContent = email;
+                const avatar = document.getElementById('avatar-preview');
+                if (!avatar.querySelector('img')) avatar.textContent = name.charAt(0).toUpperCase();
+                alert("Nodex hesabınız oluşturuldu, hoş geldiniz " + name + "!");
+            } else {
+                const email = document.getElementById('login-email').value;
+                document.getElementById('profile-display-name').textContent = email.split('@')[0];
+                document.getElementById('profile-display-email').textContent = email;
+                alert("Nodex hesabınıza giriş yapıldı!");
+            }
+        }
+
+        function handleAvatarUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                document.getElementById('avatar-preview').innerHTML = `<img src="${event.target.result}" alt="Profil">`;
+            };
+            reader.readAsDataURL(file);
+        }
+    </script>
+</body>
+</html>
