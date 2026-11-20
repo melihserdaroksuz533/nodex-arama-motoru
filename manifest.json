@@ -8,9 +8,9 @@
   "description": "Nodex Arama Motoru",
   "icons": [
     {
-      "src": "icon.png",
+      "src": "file.webp",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/webp"
     }
   ]
 }
